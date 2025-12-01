@@ -7,7 +7,7 @@ set -euo pipefail
 
 APP_NAME="VLC"             # Display name
 CATEGORY="apps"            # apps | opensourcegaming
-IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/vlc/vlc.jpg"
+IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/vlc/vlc.jpg?raw=true"
 
 #############################
 # 2 - ADD YOUR COMMANDS BELOW
