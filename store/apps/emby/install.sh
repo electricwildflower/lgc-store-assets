@@ -7,7 +7,7 @@ set -euo pipefail
 
 APP_NAME="Emby"             # Display name
 CATEGORY="apps"            # apps | opensourcegaming
-IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/jellyfin/jellyfin.jpeg?raw=true"
+IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/jellyfin/jellyfin.jpg?raw=true"
 
 #############################
 # 2 - ADD YOUR COMMANDS BELOW
