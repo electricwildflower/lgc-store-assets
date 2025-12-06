@@ -4,10 +4,10 @@ set -e
 # --------------------------
 # App metadata
 # --------------------------
-APP_NAME="VLC"                   # Name stored in apps.json
-FOLDER_NAME="vlc"                # Folder name under /apps/
-DISPLAY_NAME="VLC Media Player"  # Pretty name
-PACKAGE_NAME="vlc"               # apt/flatpak/snap ID
+APP_NAME="EMBY"                   # Name stored in apps.json
+FOLDER_NAME="emby"                # Folder name under /apps/
+DISPLAY_NAME="EMBY"  # Pretty name
+PACKAGE_NAME="emby"               # apt/flatpak/snap ID
 
 # --------------------------
 # Resolve data path from path_helper.py
