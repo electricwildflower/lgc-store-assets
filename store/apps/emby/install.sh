@@ -5,9 +5,9 @@ set -euo pipefail
 # 1 - TEMPLATE - EDIT THESE VALUES FOR EACH APP
 ###############################################
 
-APP_NAME="Kodi"             # Display name
+APP_NAME="Emby"             # Display name
 CATEGORY="apps"            # apps | opensourcegaming
-IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/kodi/kodi.png?raw=true"
+IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/jellyfin/jellyfin.jpeg?raw=true"
 
 #############################
 # 2 - ADD YOUR COMMANDS BELOW
@@ -16,14 +16,42 @@ IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/stor
 read -r -d '' RUN_SCRIPT_CONTENT << 'EOF' || true
 #!/usr/bin/env bash
 
-kodi
+command
 
 EOF
 
 INSTALL_COMMANDS() {
-    echo "[installer] Running system install commands..."
-    sudo apt-get update
-    sudo apt-get install -y kodi
+    echo "[installer] Installing snapd (if missing)..."
+
+    # Ensure snapd is installed
+    if ! command -v snap >/dev/null 2>&1; then
+        sudo apt-get update
+        sudo apt-get install -y snapd
+    fi
+
+    # Ensure snapd service is active
+    sudo systemctl enable snapd --now
+
+    # Some systems need this for classic snaps
+    sudo ln -sf /var/lib/snapd/snap /snap
+
+    echo "[installer] Downloading Emby Theater snap..."
+
+    TMP_DIR="$(mktemp -d)"
+    SNAP_URL="https://github.com/MediaBrowser/emby-theater-electron/releases/download/3.0.21/emby-theater-snap_3.0.21_amd64.snap"
+    SNAP_FILE="$TMP_DIR/emby-theater.snap"
+
+    if command -v wget >/dev/null 2>&1; then
+        wget -O "$SNAP_FILE" "$SNAP_URL"
+    else
+        curl -L -o "$SNAP_FILE" "$SNAP_URL"
+    fi
+
+    echo "[installer] Installing Emby Theater snap..."
+    sudo snap install --dangerous "$SNAP_FILE"
+
+    echo "[installer] Cleaning up..."
+    rm -rf "$TMP_DIR"
 }
 
 #############################################
