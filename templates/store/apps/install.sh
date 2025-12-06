@@ -5,9 +5,9 @@ set -euo pipefail
 # 1 - TEMPLATE - EDIT THESE VALUES FOR EACH APP
 ###############################################
 
-APP_NAME="Jellyfin"             # Display name
+APP_NAME="appname"             # Display name
 CATEGORY="apps"            # apps | opensourcegaming
-IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/jellyfin/jellyfin.jpeg?raw=true"
+IMAGE_URL="rawurl"
 
 #############################
 # 2 - ADD YOUR COMMANDS BELOW
@@ -16,13 +16,14 @@ IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/stor
 read -r -d '' RUN_SCRIPT_CONTENT << 'EOF' || true
 #!/usr/bin/env bash
 
-jellyfin --fullscreen
+command
 
 EOF
 
 INSTALL_COMMANDS() {
     echo "[installer] Running system install commands..."
-    sudo flatpak install flathub com.github.iwalton3.jellyfin-media-player
+    sudo apt-get update
+    sudo apt-get install -y app
 }
 
 #############################################
