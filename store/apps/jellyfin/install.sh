@@ -22,7 +22,7 @@ EOF
 
 INSTALL_COMMANDS() {
     echo "[installer] Running system install commands..."
-    sudo flatpak install flathub com.github.iwalton3.jellyfin-media-player
+    flatpak install flathub com.github.iwalton3.jellyfin-media-player
 }
 
 #############################################
