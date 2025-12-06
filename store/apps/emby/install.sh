@@ -8,7 +8,9 @@ set -euo pipefail
 APP_NAME="Emby"             # Display name
 CATEGORY="apps"             # apps | opensourcegaming
 IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/emby/emby.jpg?raw=true"
-APPIMAGE_URL="https://github.com/MediaBrowser/Emby.Theater/releases/download/4.8.20/Emby.Theater-4.8.20-linux-x64.AppImage"
+
+# Set the URL to the .deb file (update version as needed)
+DEB_URL="https://github.com/MediaBrowser/emby-theater-electron/releases/download/3.0.21/emby-theater_3.0.21_amd64.deb"
 
 #############################
 # 2 - ADD YOUR COMMANDS BELOW
@@ -16,30 +18,37 @@ APPIMAGE_URL="https://github.com/MediaBrowser/Emby.Theater/releases/download/4.8
 
 read -r -d '' RUN_SCRIPT_CONTENT << 'EOF' || true
 #!/usr/bin/env bash
-# Launch Emby Theatre AppImage
+# Launch Emby Theatre
 
-SCRIPT_DIR="$(dirname "$(realpath "$0")")"
-APPIMAGE_PATH="$SCRIPT_DIR/../Emby.Theater.AppImage"
+command -v emby-theater >/dev/null 2>&1 || { echo "ERROR: Emby Theatre is not installed"; exit 1; }
 
-if [ ! -f "$APPIMAGE_PATH" ]; then
-    echo "ERROR: AppImage not found at $APPIMAGE_PATH"
-    exit 1
-fi
-
-# Make sure it's executable
-chmod +x "$APPIMAGE_PATH"
-
-# Run the AppImage
-"$APPIMAGE_PATH" "$@"
+exec emby-theater "$@"
 EOF
 
 INSTALL_COMMANDS() {
-    echo "[installer] Ensuring required tools (wget/curl) are installed..."
+    echo "[installer] Installing dependencies for Emby Theatre..."
 
-    if ! command -v wget >/dev/null 2>&1 && ! command -v curl >/dev/null 2>&1; then
-        sudo apt-get update
-        sudo apt-get install -y wget curl
+    sudo apt-get update
+
+    # Dependencies from Emby Theatre GitHub instructions
+    sudo apt-get install -y cec-utils libasound2 libatomic1 libc6 libegl1 libgcc-s1 libpulse0 libstdc++6 wget curl
+
+    # Download the .deb file
+    TMP_DIR="$(mktemp -d)"
+    DEB_FILE="$TMP_DIR/emby-theater.deb"
+
+    echo "[installer] Downloading Emby Theatre .deb from $DEB_URL ..."
+    if command -v wget >/dev/null 2>&1; then
+        wget -O "$DEB_FILE" "$DEB_URL"
+    elif command -v curl >/dev/null 2>&1; then
+        curl -L -o "$DEB_FILE" "$DEB_URL"
     fi
+
+    echo "[installer] Installing Emby Theatre .deb ..."
+    sudo dpkg -i "$DEB_FILE" || sudo apt-get install -f -y
+
+    echo "[installer] Cleaning up..."
+    rm -rf "$TMP_DIR"
 }
 
 #############################################
@@ -94,7 +103,7 @@ print(datetime.utcnow().isoformat())
 PY
 )"
 
-# 1) Install dependencies
+# 1) Install Emby Theatre
 INSTALL_COMMANDS
 
 # 2) Create directories
@@ -112,23 +121,13 @@ if [ -n "$IMAGE_URL" ]; then
     fi
 fi
 
-# 4) Download AppImage
-log "Downloading Emby Theatre AppImage..."
-APPIMAGE_PATH="$APP_DIR/Emby.Theater.AppImage"
-if command -v wget >/dev/null 2>&1; then
-    wget -q -O "$APPIMAGE_PATH" "$APPIMAGE_URL" || log "ERROR: Failed to download AppImage"
-elif command -v curl >/dev/null 2>&1; then
-    curl -fsSL "$APPIMAGE_URL" -o "$APPIMAGE_PATH" || log "ERROR: Failed to download AppImage"
-fi
-chmod +x "$APPIMAGE_PATH"
-
-# 5) Write run script
+# 4) Write run script
 RUN_SCRIPT_PATH="$RUN_DIR/${APP_DIR_NAME}.sh"
 log "Writing run script to $RUN_SCRIPT_PATH"
 printf "%s\n" "$RUN_SCRIPT_CONTENT" > "$RUN_SCRIPT_PATH"
 chmod +x "$RUN_SCRIPT_PATH"
 
-# 6) Ensure apps.json exists
+# 5) Ensure apps.json exists
 mkdir -p "$(dirname "$APPS_JSON")"
 if [ ! -f "$APPS_JSON" ]; then
     log "$APPS_JSON not found — creating with proper structure."
@@ -139,7 +138,7 @@ if [ ! -f "$APPS_JSON" ]; then
 JSON
 fi
 
-# 7) Append entry to JSON safely
+# 6) Append entry to JSON safely
 log "Adding entry to $APPS_JSON"
 python3 - <<PY
 import json
@@ -175,5 +174,4 @@ log " - Run script: $RUN_SCRIPT_PATH"
 log " - JSON file: $APPS_JSON"
 
 exit 0
-
 
