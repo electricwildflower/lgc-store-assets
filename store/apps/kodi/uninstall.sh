@@ -4,10 +4,10 @@ set -e
 # --------------------------
 # App metadata
 # --------------------------
-APP_NAME="Jellyfin"                   # Name stored in apps.json
-FOLDER_NAME="jellyfin"                # Folder name under /apps/
-DISPLAY_NAME="Jellyfin"  # Pretty name
-PACKAGE_NAME="jellyfin"               # apt/flatpak/snap ID
+APP_NAME="Kodi"                   # Name stored in apps.json
+FOLDER_NAME="kodi"                # Folder name under /apps/
+DISPLAY_NAME="Kodi"  # Pretty name
+PACKAGE_NAME="kodi"               # apt/flatpak/snap ID
 
 # --------------------------
 # Resolve data path from path_helper.py
