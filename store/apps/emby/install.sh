@@ -6,8 +6,9 @@ set -euo pipefail
 ###############################################
 
 APP_NAME="Emby"             # Display name
-CATEGORY="apps"            # apps | opensourcegaming
+CATEGORY="apps"             # apps | opensourcegaming
 IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/emby/emby.jpg?raw=true"
+APPIMAGE_URL="https://github.com/MediaBrowser/Emby.Theater/releases/download/4.8.20/Emby.Theater-4.8.20-linux-x64.AppImage"
 
 #############################
 # 2 - ADD YOUR COMMANDS BELOW
@@ -15,99 +16,67 @@ IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/stor
 
 read -r -d '' RUN_SCRIPT_CONTENT << 'EOF' || true
 #!/usr/bin/env bash
+# Launch Emby Theatre AppImage
 
-command
+SCRIPT_DIR="$(dirname "$(realpath "$0")")"
+APPIMAGE_PATH="$SCRIPT_DIR/../Emby.Theater.AppImage"
 
+if [ ! -f "$APPIMAGE_PATH" ]; then
+    echo "ERROR: AppImage not found at $APPIMAGE_PATH"
+    exit 1
+fi
+
+# Make sure it's executable
+chmod +x "$APPIMAGE_PATH"
+
+# Run the AppImage
+"$APPIMAGE_PATH" "$@"
 EOF
 
 INSTALL_COMMANDS() {
-    echo "[installer] Installing snapd (if missing)..."
+    echo "[installer] Ensuring required tools (wget/curl) are installed..."
 
-    # Ensure snapd is installed
-    if ! command -v snap >/dev/null 2>&1; then
+    if ! command -v wget >/dev/null 2>&1 && ! command -v curl >/dev/null 2>&1; then
         sudo apt-get update
-        sudo apt-get install -y snapd
+        sudo apt-get install -y wget curl
     fi
-
-    # Ensure snapd service is active
-    sudo systemctl enable snapd --now
-
-    # Some systems need this for classic snaps
-    sudo ln -sf /var/lib/snapd/snap /snap
-
-    echo "[installer] Downloading Emby Theater snap..."
-
-    TMP_DIR="$(mktemp -d)"
-    SNAP_URL="https://github.com/MediaBrowser/emby-theater-electron/releases/download/3.0.21/emby-theater-snap_3.0.21_amd64.snap"
-    SNAP_FILE="$TMP_DIR/emby-theater.snap"
-
-    if command -v wget >/dev/null 2>&1; then
-        wget -O "$SNAP_FILE" "$SNAP_URL"
-    else
-        curl -L -o "$SNAP_FILE" "$SNAP_URL"
-    fi
-
-    echo "[installer] Installing Emby Theater snap..."
-    sudo snap install --dangerous "$SNAP_FILE"
-
-    echo "[installer] Cleaning up..."
-    rm -rf "$TMP_DIR"
 }
 
 #############################################
 # DO NOT EDIT BELOW THIS LINE
 #############################################
 
-# Debug helper
 log() { printf "[installer] %s\n" "$*"; }
 
-# Determine script directory (where this .sh file lives)
 SCRIPT_DIR="$(dirname "$(realpath "$0")")"
 CWD="$(pwd)"
-
 log "script dir: $SCRIPT_DIR"
 log "current working dir: $CWD"
 
-# Resolve DATA_BASE_PATH using path_helper.py.
-# We add both SCRIPT_DIR and the current working directory to sys.path
 DATA_BASE_PATH="$(python3 - <<'PY'
-import sys, json
+import sys
 from pathlib import Path
-
-# Insert possible locations where path_helper.py might live
 script_dir = Path(r'''$SCRIPT_DIR''').resolve()
 cwd = Path(r'''$CWD''').resolve()
-
-# Put script_dir and cwd at front so imports find path_helper.py if it's in the repo
 sys.path.insert(0, str(script_dir))
 sys.path.insert(0, str(cwd))
-
 try:
     import path_helper
     base = path_helper.get_data_base_path()
-    if base is None:
-        print("")
-    else:
-        print(str(base))
-except Exception as e:
-    # No path_helper import found; output empty so caller can error
-    # You can uncomment the next line for verbose python debugging:
-    # print("IMPORT_ERROR:"+repr(e))
+    print(str(base) if base else "")
+except Exception:
     print("")
 PY
 )"
 
 if [ -z "$DATA_BASE_PATH" ]; then
     log "ERROR: Could not locate path_helper.py or get_data_base_path() returned empty."
-    log "Make sure path_helper.py is in the same directory as this script or in PYTHONPATH."
-    log "You can run with: PYTHONPATH=/path/to/your/project ./install_template.sh"
     exit 1
 fi
 
 DATA_BASE_PATH="$(realpath "$DATA_BASE_PATH")"
 log "Resolved DATA_BASE_PATH = $DATA_BASE_PATH"
 
-# Build paths
 APP_DIR_NAME="$(echo "$APP_NAME" | tr ' ' '_' )"
 CATEGORY_DIR="$DATA_BASE_PATH/$CATEGORY"
 APP_DIR="$CATEGORY_DIR/$APP_DIR_NAME"
@@ -125,37 +94,42 @@ print(datetime.utcnow().isoformat())
 PY
 )"
 
-# 1) Run system installation commands
+# 1) Install dependencies
 INSTALL_COMMANDS
 
-# 2) Create necessary directories
+# 2) Create directories
 log "Creating directories..."
 mkdir -p "$ASSETS_DIR"
 mkdir -p "$RUN_DIR"
 
-# 3) Download image (if provided)
+# 3) Download icon
 if [ -n "$IMAGE_URL" ]; then
     log "Downloading icon from $IMAGE_URL ..."
     if command -v wget >/dev/null 2>&1; then
-        wget -q -O "$ASSETS_DIR/app_image.jpg" "$IMAGE_URL" || log "Warning: wget failed to download image."
+        wget -q -O "$ASSETS_DIR/app_image.jpg" "$IMAGE_URL" || log "Warning: wget failed."
     elif command -v curl >/dev/null 2>&1; then
-        curl -fsSL "$IMAGE_URL" -o "$ASSETS_DIR/app_image.jpg" || log "Warning: curl failed to download image."
-    else
-        log "No wget/curl available; skipping image download."
+        curl -fsSL "$IMAGE_URL" -o "$ASSETS_DIR/app_image.jpg" || log "Warning: curl failed."
     fi
-else
-    log "No IMAGE_URL provided; skipping image download."
 fi
 
-# 4) Write run script correctly
+# 4) Download AppImage
+log "Downloading Emby Theatre AppImage..."
+APPIMAGE_PATH="$APP_DIR/Emby.Theater.AppImage"
+if command -v wget >/dev/null 2>&1; then
+    wget -q -O "$APPIMAGE_PATH" "$APPIMAGE_URL" || log "ERROR: Failed to download AppImage"
+elif command -v curl >/dev/null 2>&1; then
+    curl -fsSL "$APPIMAGE_URL" -o "$APPIMAGE_PATH" || log "ERROR: Failed to download AppImage"
+fi
+chmod +x "$APPIMAGE_PATH"
+
+# 5) Write run script
 RUN_SCRIPT_PATH="$RUN_DIR/${APP_DIR_NAME}.sh"
 log "Writing run script to $RUN_SCRIPT_PATH"
 printf "%s\n" "$RUN_SCRIPT_CONTENT" > "$RUN_SCRIPT_PATH"
 chmod +x "$RUN_SCRIPT_PATH"
 
-# 5) Ensure category directory exists and apps.json exists with required structure
+# 6) Ensure apps.json exists
 mkdir -p "$(dirname "$APPS_JSON")"
-
 if [ ! -f "$APPS_JSON" ]; then
     log "$APPS_JSON not found — creating with proper structure."
     cat > "$APPS_JSON" <<'JSON'
@@ -165,22 +139,13 @@ if [ ! -f "$APPS_JSON" ]; then
 JSON
 fi
 
-# Sanity check that we can write to apps.json
-if [ ! -w "$APPS_JSON" ]; then
-    log "ERROR: Cannot write to $APPS_JSON (permission denied)."
-    exit 1
-fi
-
-# 6) Append entry to JSON safely with Python
+# 7) Append entry to JSON safely
 log "Adding entry to $APPS_JSON"
-
 python3 - <<PY
 import json
 from pathlib import Path
 
 apps_json = Path(r'''$APPS_JSON''')
-
-# Load existing file; if malformed, reset to required structure
 try:
     data = json.loads(apps_json.read_text())
     if not isinstance(data, dict) or "apps" not in data:
@@ -196,7 +161,6 @@ new_entry = {
     "added_date": r'''$TIMESTAMP'''
 }
 
-# Prevent duplicates by name
 if not any(item.get("name") == new_entry["name"] for item in data["apps"]):
     data["apps"].append(new_entry)
     apps_json.write_text(json.dumps(data, indent=4))
@@ -205,12 +169,11 @@ else:
     print("EXISTS")
 PY
 
-RESULT=$?
-
 log "Install complete. Summary:"
 log " - App folder: $APP_DIR"
 log " - Run script: $RUN_SCRIPT_PATH"
 log " - JSON file: $APPS_JSON"
 
 exit 0
+
 
