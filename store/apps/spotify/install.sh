@@ -23,7 +23,7 @@ EOF
 INSTALL_COMMANDS() {
     echo "[installer] Running system install commands..."
     sudo apt-get update
-    sudo apt-get install -y spotify
+    sudo snap install spotify
 }
 
 #############################################
