@@ -7,7 +7,7 @@ set -euo pipefail
 
 APP_NAME="Spotify"             # Display name
 CATEGORY="apps"            # apps | opensourcegaming
-IMAGE_URL="rawurl"
+IMAGE_URL="https://github.com/electricwildflower/lgc-store-assets/blob/main/store/apps/spotify/spotify.png?raw=true"
 
 #############################
 # 2 - ADD YOUR COMMANDS BELOW
